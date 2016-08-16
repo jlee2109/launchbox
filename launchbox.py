@@ -44,11 +44,11 @@ def send_links():
     for link in links:
         linkstring = linkstring + link + "\r\n"
 
-    write_lcd_line_4("Sending links...")
+    # write_lcd_line_4("Sending links...")
     time.sleep(1)
-    write_lcd_line_4("Links sent!     ")
+    # write_lcd_line_4("Links sent!     ")
     time.sleep(5)
-    write_lcd_line_4("                ")
+    # write_lcd_line_4("                ")
 
 
 # setup input pin to detect button push
