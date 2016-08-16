@@ -8,18 +8,18 @@ import urllib2
 import dateutil.parser
 import pytz
 
-from Adafruit_CharLCD.Adafruit_CharLCD import Adafruit_CharLCD
+from Adafruit_CharLCD.Adafruit_CharLCD import Adafruit_CharLCDPlate
 
 # sys.path.append("/home/pi/Desktop/launchbox/Adafruit_CharLCD")
 
 
 def write_lcd_line_1(message):
-    lcd.setCursor(0, 0)
+    lcd.set_cursor(0, 0)
     lcd.message(message)
 
 
 def write_lcd_line_2(message):
-    lcd.setCursor(0, 1)
+    lcd.set_cursor(0, 1)
     lcd.message(message)
 
 # current screen only has 2 lines
@@ -60,8 +60,8 @@ try:
     print "running countdown..."
 
     # initialize LCD
-    lcd = Adafruit_CharLCD()
-    lcd.begin(20, 4)
+    lcd = Adafruit_CharLCDPlate(cols=16, lines=2)
+    # lcd.begin(16, 2)
 
     write_lcd_line_1("Retrieving launch")
     write_lcd_line_2("data...")
