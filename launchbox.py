@@ -22,15 +22,16 @@ def write_lcd_line_2(message):
     lcd.setCursor(0, 1)
     lcd.message(message)
 
+# current screen only has 2 lines
 
-def write_lcd_line_3(message):
-    lcd.setCursor(0, 2)
-    lcd.message(message)
-
-
-def write_lcd_line_4(message):
-    lcd.setCursor(0, 3)
-    lcd.message(message)
+# def write_lcd_line_3(message):
+#     lcd.setCursor(0, 2)
+#     lcd.message(message)
+#
+#
+# def write_lcd_line_4(message):
+#     lcd.setCursor(0, 3)
+#     lcd.message(message)
 
 
 def send_links():
@@ -87,7 +88,7 @@ try:
             launchNameText = launchName[scrollStart % (len(launchName) - 20): scrollStart % len(launchName) + 20]
             write_lcd_line_1(launchNameText[:20])
             write_lcd_line_2(launchTime.strftime("%m/%d/%y %H:%M:%SUTC"))
-            write_lcd_line_3("{0}d {1}h {2}m {3}s ".format(diff.days, hours, minutes, seconds))
+            # write_lcd_line_3("{0}d {1}h {2}m {3}s ".format(diff.days, hours, minutes, seconds))
             scrollStart += 1
             loopCount += 1
 
