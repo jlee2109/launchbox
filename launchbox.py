@@ -10,48 +10,41 @@ import dateutil.parser
 import pytz
 
 from Adafruit_CharLCD.Adafruit_CharLCD import Adafruit_CharLCDPlate
+from Adafruit_CharLCD.Adafruit_CharLCD import LEFT, RIGHT
 
-# sys.path.append("/home/pi/Desktop/launchbox/Adafruit_CharLCD")
-
-
+# USER PREFERENCES
 ROW_NUM = 2  # number of rows on the led screen
 COL_NUM = 16  # number of columns on the led screen
-DATA_REFRESH_INTERVAL = 20  # seconds
+DATA_REFRESH_INTERVAL = 5 * 60  # seconds
 ROW_2_SWITCH_INTERVAL = 30  # seconds
+
+SHORT_TIMESTAMP = True
+
+LOOP_DELAY = 0.25
+SCROLL_DELAY = 0.8
+
+
+# CALCULATED CONSTANTS
+SCROLL_LOOP_INTERVAL = int(SCROLL_DELAY / LOOP_DELAY)
 
 
 def handle_message(message):
     # use a fancy string slicing trick to get the name to scroll on each line individually
     # TODO: more complicated scrollStart so that scrolling pauses in between each pass
-    if len(message) > COL_NUM:
+    if len(message) > COL_NUM + 1:
         shifted_message = message[scrollStart % (len(message) - COL_NUM + 1): scrollStart % len(message) + COL_NUM]
         return shifted_message[:COL_NUM]
     else:
         return message
 
 
-def write_lcd_line_1(message):
+def write_lcd_line(row, message, old_message=''):
+    # row count starts at row = 1
     message = handle_message(message)
-    lcd.set_cursor(0, 0)
-    lcd.message(message)
-
-
-def write_lcd_line_2(message):
-    message = handle_message(message)
-    lcd.set_cursor(0, 1)
-    lcd.message(message)
-
-# current screen only has 2 lines
-
-# def write_lcd_line_3(message):
-#     lcd.setCursor(0, 2)
-#     lcd.message(message)
-#
-#
-# def write_lcd_line_4(message):
-#     lcd.setCursor(0, 3)
-#     lcd.message(message)
-
+    if message != old_message:
+        lcd.set_cursor(0, row - 1)
+        lcd.message(message)
+    return message
 
 def send_links():
     # this sends a list of streaming video links as a note to
@@ -84,12 +77,15 @@ try:
 
     scrollStart = 0
     loopCount = 0
+    line_2_mode = 1
+    launch_num = 1
 
-    write_lcd_line_1("Retrieving launch")
-    write_lcd_line_2("data...")
+    old_msg_1 = write_lcd_line(1, "Retrieving launch")
+    old_msg_2 = write_lcd_line(2, "data...")
 
     time_last_data_refresh = 0
-    time_line_2_loop = 0
+    time_line_2_loop = time.time()
+    time_last_scroll = time.time()
 
     while 1:
         try:
@@ -107,36 +103,58 @@ try:
                 time_last_data_refresh = current_time
                 lcd.clear()
 
+            # calculations
             diff = launchTime - current_datetime
             hours = int(diff.seconds / 3600) % 24
             minutes = int(diff.seconds / 60) % 60
             seconds = diff.seconds % 60
 
+            # line 1
+            old_msg_1 = write_lcd_line(1, launchName, old_msg_1)
 
-            # launchName = 'short_test'
-            # if len(launchName) > COL_NUM:
-            #     launchNameText = launchName[scrollStart % (len(launchName) - COL_NUM):
-            #                                 scrollStart % len(launchName) + COL_NUM]
-            # else:
-            #     launchNameText = launchName
-            write_lcd_line_1(launchName)
-            write_lcd_line_2(launchTime.strftime("%m/%d/%y %H:%M:%SUTC"))
-            # write_lcd_line_3("{0}d {1}h {2}m {3}s ".format(diff.days, hours, minutes, seconds))
-            scrollStart += 1
+            # line 2
+            if current_time - time_line_2_loop > ROW_2_SWITCH_INTERVAL:
+                if line_2_mode == 0:
+                    line_2_mode = 1
+                elif line_2_mode == 1:
+                    line_2_mode = 0
+                time_line_2_loop = current_time
+                write_lcd_line(2, ' ' * (COL_NUM + 1))
+            if line_2_mode == 0:
+                if SHORT_TIMESTAMP:
+                    write_lcd_line(2, launchTime.strftime("%m/%d %H:%M:%S"), old_msg_2)
+                else:
+                    write_lcd_line(2, launchTime.strftime("%m/%d/%y %H:%M:%SUTC"), old_msg_2)
+            elif line_2_mode == 1:
+                if SHORT_TIMESTAMP:
+                    write_lcd_line(2, "{0}d {1}h {2}m {3}s ".format(diff.days, hours, minutes, seconds), old_msg_2)
+                else:
+                    write_lcd_line(2, "T- {0}d {1}h {2}m {3}s ".format(diff.days, hours, minutes, seconds), old_msg_2)
+            else:
+                raise ValueError('line_2_mode invalid: %s' % line_2_mode)
+
+            # check for button presses
+            if lcd.is_pressed(LEFT):
+                print 'LEFT pressed'
+            if lcd.is_pressed(RIGHT):
+                print 'RIGHT pressed'
+
+            # cleanup the loop
+            if current_time - time_last_scroll > SCROLL_DELAY:
+                scrollStart += 1
+                time_last_scroll = current_time
             loopCount += 1
-
             # this would take forever to happen, but handle it just in case
-            if scrollStart == sys.maxint:
+            if scrollStart == sys.maxint or loopCount == sys.maxint:
                 scrollStart = 0
-
-            # this controls the web callout, making it happen every 600 seconds
-            if loopCount == 600:
                 loopCount = 0
+
         except Exception as e:
-            write_lcd_line_1("Exception occurred")
+            lcd.clear()
+            write_lcd_line(1, "Exception occurred")
             # traceback.print_exc()  # should only be turned on for debugging
 
-        time.sleep(1)
+        time.sleep(LOOP_DELAY)
 
 except KeyboardInterrupt:
     sys.exit()
