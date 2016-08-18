@@ -8,6 +8,7 @@ import json
 import urllib2
 import dateutil.parser
 import pytz
+import atexit
 
 from Adafruit_CharLCD.Adafruit_CharLCD import Adafruit_CharLCDPlate
 from Adafruit_CharLCD.Adafruit_CharLCD import LEFT, RIGHT
@@ -28,6 +29,13 @@ SCROLL_DELAY = 0.8
 SCROLL_LOOP_INTERVAL = int(SCROLL_DELAY / LOOP_DELAY)
 
 
+def program_end(lcd):
+    print 'powering down launchbox...'
+    lcd.clear()
+    lcd.enable_display(False)
+    lcd.set_backlight(0)
+
+
 def handle_message(message):
     # use a fancy string slicing trick to get the name to scroll on each line individually
     # TODO: more complicated scrollStart so that scrolling pauses in between each pass
@@ -45,6 +53,7 @@ def write_lcd_line(row, message, old_message=''):
         lcd.set_cursor(0, row - 1)
         lcd.message(message)
     return message
+
 
 def send_links():
     # this sends a list of streaming video links as a note to
@@ -73,6 +82,7 @@ try:
 
     # initialize LCD
     lcd = Adafruit_CharLCDPlate(cols=COL_NUM, lines=ROW_NUM)
+    atexit.register(program_end, lcd)
     # lcd.begin(16, 2)
 
     scrollStart = 0
