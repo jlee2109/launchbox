@@ -114,7 +114,7 @@ try:
                 lcd.clear()
 
             # calculations
-            diff = launchTime - current_datetime
+            diff = current_datetime - launchTime
             hours = int(diff.seconds / 3600) % 24
             minutes = int(diff.seconds / 60) % 60
             seconds = diff.seconds % 60
