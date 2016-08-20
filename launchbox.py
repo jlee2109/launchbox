@@ -36,19 +36,24 @@ def program_end(lcd):
     lcd.set_backlight(0)
 
 
-def handle_message(message):
-    # use a fancy string slicing trick to get the name to scroll on each line individually
-    # TODO: more complicated scrollStart so that scrolling pauses in between each pass
-    if len(message) > COL_NUM + 1:
-        shifted_message = message[scrollStart % (len(message) - COL_NUM + 1): scrollStart % len(message) + COL_NUM]
-        return shifted_message[:COL_NUM]
-    else:
-        return message
+def generate_scroll_list(message):
+    # list of strings for "scrolling" action
+    if len(message) < COL_NUM:
+        return [message]
+    out = [message[i:i + COL_NUM] for i in range(0, len(message) - COL_NUM + 1)]
+    out = [out[0]] * 1 + out + [out[-1]] * 1
+    return out
 
 
-def write_lcd_line(row, message, old_message=''):
+def select_scroll_item(scroll_list):
+    return scroll_list[scrollStart % len(scroll_list)]
+
+
+def write_lcd_line(row, scroll_list, old_message=''):
     # row count starts at row = 1
-    message = handle_message(message)
+    if not isinstance(scroll_list, list):
+        raise TypeError("scroll list must be a list type: %s" % scroll_list)
+    message = select_scroll_item(scroll_list)
     if message != old_message:
         lcd.set_cursor(0, row - 1)
         lcd.message(message)
@@ -89,6 +94,7 @@ try:
     loopCount = 0
     line_2_mode = 1
     launch_num = 1
+    launch_name_scroll = []
 
     old_msg_1 = write_lcd_line(1, "Retrieving launch")
     old_msg_2 = write_lcd_line(2, "data...")
@@ -111,16 +117,19 @@ try:
                 launchName = response["launches"][0]["name"]
                 launchTime = dateutil.parser.parse(response["launches"][0]["windowstart"])
                 time_last_data_refresh = current_time
+                launch_name_scroll = generate_scroll_list(launchName)
                 lcd.clear()
+                # scrollStart = len(launchName)
 
             # calculations
             diff = launchTime - current_datetime
+            # TODO: handle when diff.days ia negative, indicating this rocket already launched
             hours = int(diff.seconds / 3600) % 24
             minutes = int(diff.seconds / 60) % 60
             seconds = diff.seconds % 60
 
             # line 1
-            old_msg_1 = write_lcd_line(1, launchName, old_msg_1)
+            old_msg_1 = write_lcd_line(1, launch_name_scroll, old_msg_1)
 
             # line 2
             if current_time - time_line_2_loop > ROW_2_SWITCH_INTERVAL:
@@ -129,17 +138,19 @@ try:
                 elif line_2_mode == 1:
                     line_2_mode = 0
                 time_line_2_loop = current_time
-                write_lcd_line(2, ' ' * (COL_NUM + 1))
+                write_lcd_line(2, [' ' * (COL_NUM + 1)])
             if line_2_mode == 0:
                 if SHORT_TIMESTAMP:
-                    write_lcd_line(2, launchTime.strftime("%m/%d %H:%M:%S"), old_msg_2)
+                    write_lcd_line(2, generate_scroll_list(launchTime.strftime("%m/%d %H:%M:%S")), old_msg_2)
                 else:
-                    write_lcd_line(2, launchTime.strftime("%m/%d/%y %H:%M:%SUTC"), old_msg_2)
+                    write_lcd_line(2, generate_scroll_list(launchTime.strftime("%m/%d/%y %H:%M:%SUTC")), old_msg_2)
             elif line_2_mode == 1:
                 if SHORT_TIMESTAMP:
-                    write_lcd_line(2, "{0}d {1}h {2}m {3}s ".format(diff.days, hours, minutes, seconds), old_msg_2)
+                    write_lcd_line(2, generate_scroll_list(
+                        "{0}d {1}h {2}m {3}s".format(diff.days, hours, minutes, seconds)), old_msg_2)
                 else:
-                    write_lcd_line(2, "T- {0}d {1}h {2}m {3}s ".format(diff.days, hours, minutes, seconds), old_msg_2)
+                    write_lcd_line(2, generate_scroll_list(
+                        "T- {0}d {1}h {2}m {3}s".format(diff.days, hours, minutes, seconds)), old_msg_2)
             else:
                 raise ValueError('line_2_mode invalid: %s' % line_2_mode)
 
