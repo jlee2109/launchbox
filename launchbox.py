@@ -83,7 +83,7 @@ def send_links():
 # GPIO.add_event_detect(18, GPIO.FALLING, callback=send_links, bouncetime=200)
 
 try:
-    print "running countdown..."
+    print "running launchbox..."
 
     # initialize LCD
     lcd = Adafruit_CharLCDPlate(cols=COL_NUM, lines=ROW_NUM)
@@ -174,6 +174,7 @@ try:
             lcd.clear()
             write_lcd_line(1, "Exception occurred")
             # traceback.print_exc()  # should only be turned on for debugging
+            time.sleep(5 * 1000)  # wait period before trying again
 
         time.sleep(LOOP_DELAY)
 
