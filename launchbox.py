@@ -92,7 +92,7 @@ try:
 
     scrollStart = 0
     loopCount = 0
-    line_2_mode = 1
+    line_2_mode = 0
     launch_num = 1
     launch_name_scroll = []
 
