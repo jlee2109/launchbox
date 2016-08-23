@@ -96,8 +96,8 @@ try:
     launch_num = 1
     launch_name_scroll = []
 
-    old_msg_1 = write_lcd_line(1, "Retrieving launch")
-    old_msg_2 = write_lcd_line(2, "data...")
+    old_msg_1 = write_lcd_line(1, ["LAUNCHBOX"])
+    old_msg_2 = write_lcd_line(2, ["Initializing..."])
 
     time_last_data_refresh = 0
     time_line_2_loop = time.time()
