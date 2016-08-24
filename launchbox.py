@@ -21,8 +21,8 @@ ROW_2_SWITCH_INTERVAL = 30  # seconds
 
 SHORT_TIMESTAMP = True
 
-LOOP_DELAY = 0.25
-SCROLL_DELAY = 0.8
+LOOP_DELAY = 0.1  # sec; minimum amount of time between loops
+SCROLL_DELAY = 0.6  # sec; delay to scroll line
 
 
 # CALCULATED CONSTANTS
@@ -170,13 +170,15 @@ try:
                 scrollStart = 0
                 loopCount = 0
 
+            loop_time = time.time() - current_time  # time taken to pass through the loop
+            # print 'Elapsed time: %1.5f sec' % loop_time
+            time.sleep(max(0, LOOP_DELAY - loop_time))
+
         except Exception as e:
             lcd.clear()
             write_lcd_line(1, "Exception occurred")
             # traceback.print_exc()  # should only be turned on for debugging
             time.sleep(5 * 1000)  # wait period before trying again
-
-        time.sleep(LOOP_DELAY)
 
 except KeyboardInterrupt:
     sys.exit()
