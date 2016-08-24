@@ -39,7 +39,7 @@ def program_end(lcd):
 def generate_scroll_list(message):
     # list of strings for "scrolling" action
     if len(message) < COL_NUM:
-        return [message]
+        return [message + ' ' * (COL_NUM - len(message))]
     out = [message[i:i + COL_NUM] for i in range(0, len(message) - COL_NUM + 1)]
     out = [out[0]] * 1 + out + [out[-1]] * 1
     return out
