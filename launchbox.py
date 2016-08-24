@@ -115,7 +115,7 @@ try:
                 print 'fetching new launch data at ' + current_timestr
                 response = json.load(urllib2.urlopen("https://launchlibrary.net/1.2/launch/next/1"))
                 launchName = response["launches"][0]["name"]
-                launchTime = dateutil.parser.parse(response["launches"][0]["windowstart"])
+                launchTime = dateutil.parser.parse(response["launches"][0]["net"])
                 time_last_data_refresh = current_time
                 launch_name_scroll = generate_scroll_list(launchName)
                 lcd.clear()
