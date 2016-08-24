@@ -176,9 +176,9 @@ try:
 
         except Exception as e:
             lcd.clear()
-            write_lcd_line(1, "Exception occurred")
-            # traceback.print_exc()  # should only be turned on for debugging
-            time.sleep(5 * 1000)  # wait period before trying again
+            write_lcd_line(1, ["Exception occurred"])
+            traceback.print_exc()  # should only be turned on for debugging
+            time.sleep(5)  # wait period before trying again
 
 except KeyboardInterrupt:
     sys.exit()
