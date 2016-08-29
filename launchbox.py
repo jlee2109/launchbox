@@ -11,7 +11,7 @@ import pytz
 import atexit
 
 from Adafruit_CharLCD.Adafruit_CharLCD import Adafruit_CharLCDPlate
-from Adafruit_CharLCD.Adafruit_CharLCD import LEFT, RIGHT
+from Adafruit_CharLCD.Adafruit_CharLCD import LEFT, RIGHT, SELECT
 
 # USER PREFERENCES
 ROW_NUM = 2  # number of rows on the led screen
@@ -27,6 +27,14 @@ SCROLL_DELAY = 0.6  # sec; delay to scroll line
 
 # CALCULATED CONSTANTS
 SCROLL_LOOP_INTERVAL = int(SCROLL_DELAY / LOOP_DELAY)
+
+
+# class ButtonSettings(object):
+#     # controls settings that can be changed with the buttons on the LCD
+#     def __init__(self):
+#         self.launch_num = 0
+#         self.api_url =
+
 
 
 def program_end(lcd):
@@ -60,6 +68,28 @@ def write_lcd_line(row, scroll_list, old_message=''):
     return message
 
 
+def fetch_next_launches(launch_num):
+    fetch_num = max(3, launch_num + 1)
+    url = "https://launchlibrary.net/1.2/launch/next/" + str(fetch_num)
+    response = json.load(urllib2.urlopen(url))
+    print '%s launches fetched' % response.get('total', None)
+    return response
+
+
+def parse_launch_info(response, launch_num):
+    if launch_num + 1 > response['total']:
+        # this happens when a launch_num exceeds the number of launches in the database
+        raise LaunchNumIndexError('launch_num greater than number of launches in response')
+    launchName = response["launches"][launch_num]["name"]
+    launchTime = dateutil.parser.parse(response["launches"][launch_num]["net"])
+    return launchName, launchTime
+
+
+class LaunchNumIndexError(Exception):
+    # to be used whenever there is an issue with launch_num
+    pass
+
+
 def send_links():
     # this sends a list of streaming video links as a note to
     # your pushbullet account
@@ -77,11 +107,6 @@ def send_links():
     # write_lcd_line_4("                ")
 
 
-# setup input pin to detect button push
-# GPIO.setmode(GPIO.BCM)
-# GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-# GPIO.add_event_detect(18, GPIO.FALLING, callback=send_links, bouncetime=200)
-
 try:
     print "running launchbox..."
 
@@ -93,8 +118,11 @@ try:
     scrollStart = 0
     loopCount = 0
     line_2_mode = 0
-    launch_num = 1
+    launch_num = 0
     launch_name_scroll = []
+    backlight_on = True
+    launch_increment_count = 0
+    launch_increment_value = 1
 
     old_msg_1 = write_lcd_line(1, ["LAUNCHBOX"])
     old_msg_2 = write_lcd_line(2, ["Initializing..."])
@@ -105,6 +133,7 @@ try:
 
     while 1:
         try:
+            new_launch = False  # set here to avoid error loops
             # get current time
             current_time = time.time()  # time in unix seconds
             current_datetime = datetime.utcnow().replace(tzinfo=pytz.utc)  # UIC datetime object
@@ -113,9 +142,8 @@ try:
             # get launch data
             if current_time - time_last_data_refresh > DATA_REFRESH_INTERVAL:
                 print 'fetching new launch data at ' + current_timestr
-                response = json.load(urllib2.urlopen("https://launchlibrary.net/1.2/launch/next/1"))
-                launchName = response["launches"][0]["name"]
-                launchTime = dateutil.parser.parse(response["launches"][0]["net"])
+                response = fetch_next_launches(launch_num)
+                launchName, launchTime = parse_launch_info(response, launch_num)
                 time_last_data_refresh = current_time
                 launch_name_scroll = generate_scroll_list(launchName)
                 lcd.clear()
@@ -155,10 +183,42 @@ try:
                 raise ValueError('line_2_mode invalid: %s' % line_2_mode)
 
             # check for button presses
+            if launch_increment_count == 9:
+                launch_increment_value = 5
             if lcd.is_pressed(LEFT):
-                print 'LEFT pressed'
-            if lcd.is_pressed(RIGHT):
-                print 'RIGHT pressed'
+                launch_num -= launch_increment_value
+                if launch_num < 0:
+                    launch_num = 0
+                new_launch = True
+                launch_increment_count += 1
+            elif lcd.is_pressed(RIGHT):
+                launch_num += launch_increment_value
+                new_launch = True
+                launch_increment_count += 1
+            else:
+                launch_increment_count = 0
+                launch_increment_value = 1
+            if new_launch:  # do this rather than another lcd.is_pressed to avoid race condition
+                lcd.clear()
+                write_lcd_line(1, ['Launch #%d' % (launch_num + 1)])
+                time.sleep(0.5)
+                try:
+                    launchName, launchTime = parse_launch_info(response, launch_num)
+                except LaunchNumIndexError:
+                    response = fetch_next_launches(launch_num)
+                    time_last_data_refresh = current_time
+                    launchName, launchTime = parse_launch_info(response, launch_num)
+                launch_name_scroll = generate_scroll_list(launchName)
+                lcd.clear()
+                scrollStart = 0
+            if lcd.is_pressed(SELECT):
+                if backlight_on:
+                    lcd.set_backlight(0)
+                    backlight_on = False
+                else:
+                    lcd.set_backlight(1)
+                    backlight_on = True
+
 
             # cleanup the loop
             if current_time - time_last_scroll > SCROLL_DELAY:
