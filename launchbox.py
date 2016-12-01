@@ -17,7 +17,7 @@ from Adafruit_CharLCD.Adafruit_CharLCD import LEFT, RIGHT, SELECT
 ROW_NUM = 2  # number of rows on the led screen
 COL_NUM = 16  # number of columns on the led screen
 DATA_REFRESH_INTERVAL = 5 * 60  # seconds
-ROW_2_SWITCH_INTERVAL = 30  # seconds
+ROW_2_SWITCH_INTERVAL = 20  # seconds
 
 SHORT_TIMESTAMP = True
 
@@ -34,7 +34,6 @@ SCROLL_LOOP_INTERVAL = int(SCROLL_DELAY / LOOP_DELAY)
 #     def __init__(self):
 #         self.launch_num = 0
 #         self.api_url =
-
 
 
 def program_end(lcd):
@@ -73,6 +72,14 @@ def fetch_next_launches(launch_num):
     url = "https://launchlibrary.net/1.2/launch/next/" + str(fetch_num)
     response = json.load(urllib2.urlopen(url))
     print '%s launches fetched' % response.get('total', None)
+    # add graduation ceremony to launch response
+    grad_tstamp = "December 17, 2016 2:00:00 UTC"
+    if datetime.utcnow().replace(tzinfo=pytz.utc) < dateutil.parser.parse(grad_tstamp):
+        graduation_response = {
+            'name': 'Graduation Time',
+            'net': grad_tstamp
+        }
+        response['launches'] = [graduation_response] + response['launches']
     return response
 
 
@@ -168,10 +175,7 @@ try:
                 time_line_2_loop = current_time
                 write_lcd_line(2, [' ' * (COL_NUM + 1)])
             if line_2_mode == 0:
-                if SHORT_TIMESTAMP:
-                    write_lcd_line(2, generate_scroll_list(launchTime.strftime("%m/%d %H:%M:%S")), old_msg_2)
-                else:
-                    write_lcd_line(2, generate_scroll_list(launchTime.strftime("%m/%d/%y %H:%M:%SUTC")), old_msg_2)
+                write_lcd_line(2, generate_scroll_list("{0} seconds".format(diff.seconds)), old_msg_2)
             elif line_2_mode == 1:
                 if SHORT_TIMESTAMP:
                     write_lcd_line(2, generate_scroll_list(
