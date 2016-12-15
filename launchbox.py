@@ -73,7 +73,7 @@ def fetch_next_launches(launch_num):
     response = json.load(urllib2.urlopen(url))
     print '%s launches fetched' % response.get('total', None)
     # add graduation ceremony to launch response
-    grad_tstamp = "December 17, 2016 2:00:00 UTC"
+    grad_tstamp = "December 17, 2016 14:00:00 UTC"
     if datetime.utcnow().replace(tzinfo=pytz.utc) < dateutil.parser.parse(grad_tstamp):
         graduation_response = {
             'name': 'Graduation Time',
@@ -175,7 +175,7 @@ try:
                 time_line_2_loop = current_time
                 write_lcd_line(2, [' ' * (COL_NUM + 1)])
             if line_2_mode == 0:
-                write_lcd_line(2, generate_scroll_list("{0} seconds".format(diff.seconds)), old_msg_2)
+                write_lcd_line(2, generate_scroll_list("{0} seconds".format(int(diff.total_seconds()))), old_msg_2)
             elif line_2_mode == 1:
                 if SHORT_TIMESTAMP:
                     write_lcd_line(2, generate_scroll_list(
