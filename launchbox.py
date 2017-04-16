@@ -36,7 +36,6 @@ SCROLL_LOOP_INTERVAL = int(SCROLL_DELAY / LOOP_DELAY)
 #         self.api_url =
 
 
-
 def program_end(lcd):
     print 'powering down launchbox...'
     lcd.clear()
@@ -113,7 +112,9 @@ try:
     # initialize LCD
     lcd = Adafruit_CharLCDPlate(cols=COL_NUM, lines=ROW_NUM)
     atexit.register(program_end, lcd)
-    # lcd.begin(16, 2)
+    lcd.clear()
+    lcd.enable_display(True)
+    lcd.set_backlight(1)
 
     scrollStart = 0
     loopCount = 0
@@ -124,8 +125,9 @@ try:
     launch_increment_count = 0
     launch_increment_value = 1
 
-    old_msg_1 = write_lcd_line(1, ["LAUNCHBOX"])
+    old_msg_1 = write_lcd_line(1, ["   LAUNCH-BOX   "])
     old_msg_2 = write_lcd_line(2, ["Initializing..."])
+    time.sleep(10)  # wait for raspi get booted so we have network, otherwise exception message will be thrown
 
     time_last_data_refresh = 0
     time_line_2_loop = time.time()
